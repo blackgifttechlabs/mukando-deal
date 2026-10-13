@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+import { buildRound, paymentBalance } from '../js/finance.js';
+import { buildReminders, daysBetween, whatsappLink } from '../js/remind.js';
+import { memberStatement, cycleSummary, clubSummary, defaulters, toCsv } from '../js/report-data.js';
+const members = [['m1', 'Ann'], ['m2', 'Ben'], ['m3', 'Cat']].map(([id, fullName]) => ({ id, fullName, phone: '+263 77 123 4567', status: 'active', joinDate: '2026-01-01' }));
+const rules = { clubName: 'Club', amount: 20, frequency: 'monthly', startDate: '2026-01-31', penaltyAmount: 2, graceDays: 3 };
+const cycles = buildRound(members, rules, [], ['m1', 'm2', 'm3'], 'manual', 'log');
+const pay = (id, memberId, amount, date, cycleId = 'r1-c1') => ({ id, cycleId, memberId, amount, date });
+const payments = [pay('p1', 'm1', 20, '2026-01-31'), pay('p2', 'm2', 10, '2026-01-31'), pay('p3', 'm2', 10, '2026-02-05')];
+// Reminders: appear `daysBefore` days ahead, never earlier.
+assert.equal(daysBetween('2026-01-29', '2026-01-31'), 2);
+const settings = { daysBefore: 2, clubName: 'Club' };
+const staff = { role: 'treasurer' };
+const at = asOf => buildReminders({ user: staff, cycles: cycles.map(c => ({ ...c })), members, payments: [], settings, asOf });
+const dueSoon = asOf => at(asOf).filter(r => r.active && r.id === 'payment-r1-c1');
+assert.equal(dueSoon('2026-01-28').length, 0, 'three days ahead is too early');
+assert.equal(dueSoon('2026-01-29').length, 1, 'two days ahead shows');
+assert.equal(dueSoon('2026-01-29')[0].when, 'in 2 days');
+assert.equal(at('2026-01-29').some(r => r.id === 'payment-r1-c2' && r.active), false, 'later cycles stay quiet');
+const overdue = buildReminders({ user: staff, cycles, members, payments, settings, asOf: '2026-02-10' });
+assert.deepEqual(overdue.filter(r => r.memberId).map(r => r.memberId), ['m2', 'm3'], 'Ann is fully paid; Ben owes a penalty; Cat owes everything');
+assert.match(overdue.find(r => r.memberId === 'm3').message, /Cat.*\$22\.00/, 'amount owed includes the late penalty');
+assert.equal(buildReminders({ user: staff, cycles, members, payments, settings, asOf: '2026-02-10', stored: [{ id: 'payment-r1-c1', sent: true }] }).find(r => r.id === 'payment-r1-c1').sent, true);
+const meeting = buildReminders({ user: staff, cycles: [], members, settings, asOf: '2026-03-01', stored: [{ id: 'x', type: 'meeting', date: '2026-03-02', message: 'AGM', sent: false }] });
+assert.equal(meeting[0].active, true);
+// A member only sees their own reminders, with no other names or amounts.
+const memberView = buildReminders({ user: { role: 'member', memberId: 'm3' }, cycles: cycles.map(c => ({ ...c, isRecipient: c.recipientMemberId === 'm3', recipientMemberId: undefined, memberIds: undefined })), payments: [], settings, asOf: '2026-01-30' });
+assert.ok(memberView.every(r => !/Ann|Ben/.test(r.message)));
+assert.equal(memberView.filter(r => r.type === 'payout').length, 1);
+assert.ok(whatsappLink({ message: 'a b', phone: '+263 77 123 4567' }).startsWith('https://wa.me/263771234567?text=a%20b'));
+// Reports: every total ties back to the payments list.
+const data = { members, cycles, payments, payouts: [{ id: 'r1-c1', cycleId: 'r1-c1', memberId: 'm1', amount: 40 }] };
+const asOf = '2026-02-10';
+const statement = memberStatement(members[1], data, asOf);
+assert.equal(statement.totals.paid, 20); assert.equal(statement.totals.paid, payments.filter(p => p.memberId === 'm2').reduce((t, p) => t + p.amount, 0));
+assert.equal(statement.totals.outstanding, 2, 'Ben paid the second half after the grace days');
+assert.equal(memberStatement(members[2], data, '2026-01-15').totals.outstanding, 0, 'unpaid but not yet due is not owed');
+assert.equal(memberStatement(members[2], data, '2026-01-15').totals.notYetDue, 20);
+const summary = cycleSummary(cycles[0], data, asOf);
+assert.equal(summary.totals.collected, 40); assert.equal(summary.totals.paid, 40); assert.equal(summary.totals.pool, 60);
+const club = clubSummary(data, asOf);
+assert.equal(club.totals.collected, payments.reduce((t, p) => t + p.amount, 0)); assert.equal(club.totals.paidOut, 40);
+assert.equal(club.totals.outstanding, 24, 'Cat owes 22 and Ben owes the 2 penalty');
+const late = defaulters(data, asOf);
+assert.deepEqual(late.map(row => [row.member.id, row.outstanding]), [['m3', 22], ['m2', 2]]);
+assert.equal(defaulters(data, '2026-02-01').length, 0, 'nobody is a defaulter before the deadline passes');
+// CSV cells are quoted and cannot start a spreadsheet formula.
+const csv = toCsv([['Name', 'Note'], ['=HYPERLINK("x")', 'a,b'], ['-5', 'say "hi"']]);
+assert.equal(csv, '﻿Name,Note\r\n"\'=HYPERLINK(""x"")","a,b"\r\n-5,"say ""hi"""\r\n');
+console.log('PASS: reminder timing and wording, member privacy in reminders, report totals tie to payments, defaulters, CSV safety.');

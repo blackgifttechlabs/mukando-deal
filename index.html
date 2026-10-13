@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Log in | Mukando Manager</title><link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#008cff"><script type="module" src="js/assets.js"></script><script type="module" src="js/theme.js"></script><link rel="stylesheet" href="css/style.css"><script type="module" src="js/login.js"></script></head>
+<body class="login-page">
+<main class="login-shell">
+  <section class="login-visual" aria-label="Grow your savings together">
+    <div class="login-image-skeleton skeleton" data-image-loading aria-hidden="true"></div>
+    <img class="login-background" src="assets/login-savings-hd.png" alt="Stacks of coins beside a coin-filled glass jar with a growing green tree" fetchpriority="high">
+    <div class="visual-copy"><span class="eyebrow">Agape Fushai Group</span><h2>Small contributions.<br>Stronger futures.</h2><p>Save together. Grow together.</p></div>
+    <span class="visual-caption">A little today. More possibilities tomorrow.</span>
+  </section>
+  <section class="login-form-side" aria-labelledby="login-heading">
+    <div class="login-form-content">
+      <div class="brand"><img class="brand-logo" src="assets/logo.png" width="52" height="52" alt=""><span>Mukando Manager<small>Agape Fushai Group</small></span></div>
+      <div class="login-intro"><h1 id="login-heading">Welcome back</h1><p class="muted">Log in to keep your savings moving forward.</p></div>
+      <p class="error" data-error role="alert" hidden></p>
+      <form>
+        <label for="email">Email</label><input id="email" name="email" type="email" autocomplete="username" placeholder="you@example.com" required maxlength="254">
+        <label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
+        <button type="submit" disabled aria-busy="true">Checking session…</button>
+      </form>
+      <p class="login-help">Need an account? Ask your club administrator.</p>
+      <noscript><p class="error">Enable JavaScript to use Mukando Manager.</p></noscript>
+    </div>
+  </section>
+</main>
+</body></html>

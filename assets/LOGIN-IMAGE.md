@@ -1,0 +1,5 @@
+# Login background
+
+Generated with the built-in imagegen tool and saved as `assets/login-savings-hd.png`. Used by the left login panel. Native resolution: 1024 × 1536 pixels.
+
+Prompt: Use case: photorealistic-natural. Asset type: HD background photograph for the left panel of Mukando Manager login page. Create a polished high-resolution portrait photo inspired by the user's reference: progressively taller stacks of copper and gold coins across the lower area, beside a clear glass jar filled with mixed coins with a small healthy tree growing from the jar, dense realistic rich green leaves. Fresh soft mint-green studio backdrop, subtle natural light, realistic glass reflections and coin textures, optimistic communal savings and financial growth mood. Composition: objects concentrated in the lower two thirds, substantial clean green negative space in upper third for white heading overlay. Tree fully visible, tasteful editorial financial photography. No text, logos or watermarks. Portrait 2:3 aspect ratio, HD quality.

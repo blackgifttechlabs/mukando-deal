@@ -1,0 +1,414 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "mukando": {
+      "users": {
+        ".read": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && root.child('mukando/users').child(auth.uid).child('role').val() === 'admin'",
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && root.child('mukando/users').child(auth.uid).child('role').val() === 'admin'",
+          ".validate": "newData.hasChildren(['id', 'username', 'role', 'active']) && newData.child('id').val() === $uid && newData.child('username').isString() && newData.child('active').isBoolean() && (newData.child('role').val() === 'admin' || newData.child('role').val() === 'chairperson' || newData.child('role').val() === 'treasurer' || newData.child('role').val() === 'member') && !newData.hasChild('passwordHash') && !newData.hasChild('salt')",
+          "email": {
+            ".validate": "newData.isString() && newData.val().length <= 200"
+          },
+          "memberId": {
+            ".validate": "newData.isString() && newData.parent().parent().parent().child('members').child(newData.val()).exists()"
+          },
+          "mustChangePassword": {
+            ".write": "auth != null && auth.uid === $uid && newData.val() === false",
+            ".validate": "newData.isBoolean()"
+          }
+        }
+      },
+      "members": {
+        ".read": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson' || root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer')",
+        "$id": {
+          ".write": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson') && newData.exists()) || ((root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) && newData.exists())",
+          ".validate": "newData.hasChildren(['id', 'fullName', 'phone', 'joinDate', 'status', 'notes']) && newData.child('id').val() === $id && !$id.contains('|')",
+          "fullName": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120"
+          },
+          "phone": {
+            ".validate": "newData.isString() && newData.val().matches(/^\\+?[0-9]{7,15}$/)"
+          },
+          "joinDate": {
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && (!data.exists() || !root.child('mukando/cycles').exists() || newData.val() === data.val())"
+          },
+          "status": {
+            ".validate": "(newData.val() === 'active' || newData.val() === 'inactive') && (newData.val() !== 'inactive' || data.val() !== 'active' || !root.child('mukando/cycles').exists())"
+          },
+          "notes": {
+            ".validate": "newData.isString() && newData.val().length <= 2000"
+          },
+          "id": {
+            ".validate": "newData.val() === $id"
+          },
+          "$other": {
+            ".validate": false
+          },
+          ".read": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && root.child('mukando/users').child(auth.uid).child('role').val() === 'member' && root.child('mukando/users').child(auth.uid).child('memberId').val() === $id"
+        }
+      },
+      "rules": {
+        ".read": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true",
+        "club": {
+          ".write": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson') && newData.exists()) || ((root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) && newData.exists())",
+          ".validate": "newData.hasChildren(['id', 'clubName', 'amount', 'frequency', 'startDate', 'penaltyAmount', 'graceDays'])",
+          "id": {
+            ".validate": "newData.val() === 'club'"
+          },
+          "clubName": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120"
+          },
+          "$other": {
+            ".validate": false
+          },
+          "amount": {
+            ".validate": "(newData.isNumber() && newData.val() > 0 && newData.val() <= 1000000) && (!root.child('mukando/cycles').exists() || newData.val() === data.val())"
+          },
+          "frequency": {
+            ".validate": "(newData.val() === 'weekly' || newData.val() === 'monthly') && (!root.child('mukando/cycles').exists() || newData.val() === data.val())"
+          },
+          "startDate": {
+            ".validate": "(newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)) && (!root.child('mukando/cycles').exists() || newData.val() === data.val())"
+          },
+          "penaltyAmount": {
+            ".validate": "(newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000) && (!root.child('mukando/cycles').exists() || newData.val() === data.val())"
+          },
+          "graceDays": {
+            ".validate": "(newData.isNumber() && newData.val() >= 0 && newData.val() <= 365 && newData.val() % 1 === 0) && (!root.child('mukando/cycles').exists() || newData.val() === data.val())"
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      },
+      "cycles": {
+        ".read": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson' || root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer')",
+        "$id": {
+          ".write": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson') && newData.exists() && (!data.exists() || (data.child('status').val() !== 'closed' && root.child('mukando/cycleLocks').child($id).child('hasPayout').val() !== true))) || (auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer') && data.exists() && newData.exists() && newData.child('recipientMemberId').val() === data.child('recipientMemberId').val()) || ((root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) && newData.exists())",
+          ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || (newData.hasChildren([\"id\", \"number\", \"round\", \"roundKey\", \"dueDate\", \"recipientMemberId\", \"status\", \"memberIds\", \"participantIds\", \"amount\", \"amountCents\", \"memberCount\", \"expectedPoolCents\", \"penaltyAmount\", \"graceDays\", \"auditId\"]) && newData.parent().parent().child('rounds').child(newData.child('roundKey').val()).exists() && newData.parent().parent().child('roundRecipients').child(newData.child('roundKey').val()).child(newData.child('recipientMemberId').val()).val() === $id && newData.parent().parent().child('auditLog').child(newData.child('auditId').val()).child('userId').val() === auth.uid && !root.child('mukando/auditLog').child(newData.child('auditId').val()).exists() && newData.child('participantIds').val().contains('|' + newData.child('recipientMemberId').val() + '|'))",
+          "id": {
+            ".validate": "newData.val() === $id"
+          },
+          "number": {
+            ".validate": "(newData.isNumber() && newData.val() % 1 === 0 && newData.val() > 0) && (!data.exists() || newData.val() === data.val())"
+          },
+          "round": {
+            ".validate": "(newData.isNumber() && newData.val() % 1 === 0 && newData.val() > 0) && (!data.exists() || newData.val() === data.val())"
+          },
+          "roundKey": {
+            ".validate": "(newData.isString() && newData.val() === 'r' + newData.parent().child('round').val()) && (!data.exists() || newData.val() === data.val())"
+          },
+          "dueDate": {
+            ".validate": "(newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/)) && (!data.exists() || newData.val() === data.val())"
+          },
+          "recipientMemberId": {
+            ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || (newData.isString() && root.child('mukando/members').child(newData.val()).exists())"
+          },
+          "participantIds": {
+            ".validate": "(newData.isString() && newData.val().beginsWith('|') && newData.val().endsWith('|') && newData.val().length > 2) && (!data.exists() || newData.val() === data.val())"
+          },
+          "status": {
+            ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || ((!data.exists() && (newData.val() === 'open' || newData.val() === 'scheduled') && ((newData.val() === 'open') === (newData.parent().parent().parent().child('rounds').child(newData.parent().child('roundKey').val()).child('firstCycleId').val() === $id))) || (data.exists() && newData.val() === data.val()) || (data.val() === 'open' && newData.val() === 'closed' && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer') && newData.parent().parent().parent().child('payouts').child($id).child('confirmed').val() === true) || (data.val() === 'scheduled' && newData.val() === 'open' && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer') && newData.parent().parent().child('r' + newData.parent().child('round').val() + '-c' + (newData.parent().child('number').val() - 1)).child('status').val() === 'closed'))"
+          },
+          "amount": {
+            ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || ((newData.isNumber() && newData.val() > 0 && (!data.exists() ? newData.val() === root.child('mukando/rules/club/amount').val() : true)) && (!data.exists() || newData.val() === data.val()))"
+          },
+          "amountCents": {
+            ".validate": "(newData.isNumber() && newData.val() % 1 === 0 && newData.val() > 0 && newData.val() / 100 === newData.parent().child('amount').val()) && (!data.exists() || newData.val() === data.val())"
+          },
+          "memberCount": {
+            ".validate": "(newData.isNumber() && newData.val() % 1 === 0 && newData.val() > 0) && (!data.exists() || newData.val() === data.val())"
+          },
+          "expectedPoolCents": {
+            ".validate": "(newData.isNumber() && newData.val() % 1 === 0 && newData.val() === newData.parent().child('amountCents').val() * newData.parent().child('memberCount').val()) && (!data.exists() || newData.val() === data.val())"
+          },
+          "penaltyAmount": {
+            ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || ((newData.isNumber() && newData.val() >= 0 && (!data.exists() ? newData.val() === root.child('mukando/rules/club/penaltyAmount').val() : true)) && (!data.exists() || newData.val() === data.val()))"
+          },
+          "graceDays": {
+            ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || ((newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && (!data.exists() ? newData.val() === root.child('mukando/rules/club/graceDays').val() : true)) && (!data.exists() || newData.val() === data.val()))"
+          },
+          "auditId": {
+            ".validate": "newData.isString()"
+          },
+          "memberIds": {
+            ".validate": "newData.hasChildren()",
+            "$memberId": {
+              ".validate": "newData.val() === true && newData.parent().parent().child('participantIds').val().contains('|' + $memberId + '|')"
+            }
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        }
+      },
+      "payments": {
+        ".read": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson' || root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer')) || (auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && root.child('mukando/users').child(auth.uid).child('role').val() === 'member' && root.child('mukando/users').child(auth.uid).child('memberId').val() !== null && query.orderByChild === 'memberId' && query.equalTo === root.child('mukando/users').child(auth.uid).child('memberId').val())",
+        ".indexOn": [
+          "memberId",
+          "cycleId",
+          "date"
+        ],
+        "$id": {
+          ".write": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer' && !data.exists() && newData.exists()) || ((root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) && !data.exists() && newData.exists())",
+          ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || (newData.hasChildren([\"id\", \"cycleId\", \"memberId\", \"amount\", \"amountCents\", \"method\", \"reference\", \"date\", \"recordedBy\", \"auditId\"]) && root.child('mukando/cycles').child(newData.child('cycleId').val()).child('status').val() === 'open' && root.child('mukando/cycles').child(newData.child('cycleId').val()).child('participantIds').val().contains('|' + newData.child('memberId').val() + '|') && newData.parent().parent().child('auditLog').child(newData.child('auditId').val()).child('userId').val() === auth.uid && !root.child('mukando/auditLog').child(newData.child('auditId').val()).exists() && ((newData.child('amountCents').val() > 0 && !newData.hasChild('reversesPaymentId')) || (newData.child('amountCents').val() < 0 && root.child('mukando/payments').child(newData.child('reversesPaymentId').val()).child('amountCents').val() > 0 && newData.child('amountCents').val() === 0 - root.child('mukando/payments').child(newData.child('reversesPaymentId').val()).child('amountCents').val() && newData.child('cycleId').val() === root.child('mukando/payments').child(newData.child('reversesPaymentId').val()).child('cycleId').val() && newData.child('memberId').val() === root.child('mukando/payments').child(newData.child('reversesPaymentId').val()).child('memberId').val() && newData.parent().parent().child('paymentReversals').child(newData.child('reversesPaymentId').val()).val() === $id)) && root.child('mukando/cycleLocks').child(newData.child('cycleId').val()).child('hasPayout').val() !== true)",
+          "id": {
+            ".validate": "newData.val() === $id"
+          },
+          "cycleId": {
+            ".validate": "newData.isString()"
+          },
+          "memberId": {
+            ".validate": "newData.isString()"
+          },
+          "amount": {
+            ".validate": "newData.isNumber() && newData.val() !== 0 && newData.val() <= 1000000 && newData.val() >= -1000000"
+          },
+          "amountCents": {
+            ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() / 100 === newData.parent().child('amount').val()"
+          },
+          "method": {
+            ".validate": "newData.val() === 'cash' || newData.val() === 'ecocash' || newData.val() === 'bank'"
+          },
+          "reference": {
+            ".validate": "newData.isString() && newData.val().length <= 250"
+          },
+          "date": {
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/)"
+          },
+          "recordedBy": {
+            ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || (newData.val() === auth.uid)"
+          },
+          "auditId": {
+            ".validate": "newData.isString()"
+          },
+          "reversesPaymentId": {
+            ".validate": "newData.isString()"
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        }
+      },
+      "payouts": {
+        ".read": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson' || root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer')) || (auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'member') && root.child('mukando/users').child(auth.uid).child('memberId').val() != null && query.orderByChild === 'memberId' && query.equalTo === root.child('mukando/users').child(auth.uid).child('memberId').val())",
+        ".indexOn": [
+          "memberId",
+          "cycleId"
+        ],
+        "$id": {
+          ".write": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer') && !data.exists() && newData.exists()) || (data.exists() && newData.exists() && data.child('confirmed').val() === false && newData.child('confirmed').val() === true && ((auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer')) || (auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'member') && root.child('mukando/users').child(auth.uid).child('memberId').val() === data.child('memberId').val()))) || ((root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) && !data.exists() && newData.exists())",
+          ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || (newData.hasChildren(['id','cycleId','memberId','amount','amountCents','date','confirmed','recordedBy','auditId']) && newData.child('id').val() === $id && newData.child('cycleId').val() === $id && (data.exists() || (!newData.hasChild('confirmedBy') && root.child('mukando/cycles').child($id).child('status').val() === 'open' && root.child('mukando/cycles').child($id).child('recipientMemberId').val() === newData.child('memberId').val() && newData.parent().parent().child('cycleLocks').child($id).child('hasPayout').val() === true && newData.parent().parent().child('auditLog').child(newData.child('auditId').val()).child('userId').val() === auth.uid && !root.child('mukando/auditLog').child(newData.child('auditId').val()).exists())))",
+          "id": {
+            ".validate": "newData.val() === $id"
+          },
+          "cycleId": {
+            ".validate": "newData.isString() && (!data.exists() || newData.val() === data.val())"
+          },
+          "memberId": {
+            ".validate": "newData.isString() && (!data.exists() || newData.val() === data.val())"
+          },
+          "amount": {
+            ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 1000000000 && (!data.exists() || newData.val() === data.val())"
+          },
+          "amountCents": {
+            ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() > 0 && newData.val() / 100 === newData.parent().child('amount').val() && (!data.exists() || newData.val() === data.val())"
+          },
+          "date": {
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/) && (!data.exists() || newData.val() === data.val())"
+          },
+          "confirmed": {
+            ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || (newData.isBoolean() && (!data.exists() ? newData.val() === false : (newData.val() === data.val() || (data.val() === false && newData.val() === true))))"
+          },
+          "recordedBy": {
+            ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || (newData.val() === auth.uid) && (!data.exists() || newData.val() === data.val())"
+          },
+          "auditId": {
+            ".validate": "newData.isString() && (!data.exists() || newData.val() === data.val())"
+          },
+          "confirmedBy": {
+            ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || (newData.val() === auth.uid && !data.exists() && newData.parent().child('confirmed').val() === true)"
+          },
+          "confirmedAt": {
+            ".validate": "newData.isString() && !data.exists()"
+          },
+          "confirmAuditId": {
+            ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || (newData.isString() && !data.exists() && newData.parent().parent().parent().child('auditLog').child(newData.val()).child('userId').val() === auth.uid && !root.child('mukando/auditLog').child(newData.val()).exists())"
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        }
+      },
+      "reminders": {
+        ".read": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson' || root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer')) || (auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && query.orderByChild === 'type' && query.equalTo === 'meeting')",
+        ".indexOn": [
+          "type"
+        ],
+        "$id": {
+          ".write": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson' || root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer') && newData.exists()) || ((root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) && newData.exists())",
+          ".validate": "newData.hasChildren(['id','type','message','date','sent']) && newData.child('id').val() === $id && !$id.contains('|')",
+          "id": {
+            ".validate": "newData.val() === $id"
+          },
+          "type": {
+            ".validate": "(newData.val() === 'payment' || newData.val() === 'payout' || newData.val() === 'meeting') && (!data.exists() || newData.val() === data.val())"
+          },
+          "message": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500"
+          },
+          "date": {
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/)"
+          },
+          "sent": {
+            ".validate": "newData.isBoolean()"
+          },
+          "createdBy": {
+            ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || (newData.val() === auth.uid || data.exists())"
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        }
+      },
+      "auditLog": {
+        ".read": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && root.child('mukando/users').child(auth.uid).child('role').val() === 'admin'",
+        "$id": {
+          ".write": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson' || root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer') && !data.exists() && newData.exists()) || (auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'member') && !data.exists() && newData.exists() && newData.child('action').val() === 'payout.confirmed') || ((root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) && !data.exists() && newData.exists())",
+          ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || (newData.hasChildren(['id', 'time', 'userId', 'action', 'details']) && newData.child('id').val() === $id && newData.child('userId').val() === auth.uid && newData.child('time').isString() && newData.child('action').isString() && newData.child('details').isString() && newData.child('details').val().length <= 2000)"
+        }
+      },
+      "rounds": {
+        ".read": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson' || root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer')",
+        "$round": {
+          ".write": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson') && !data.exists() && newData.exists()) || ((root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) && !data.exists() && newData.exists())",
+          ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || (newData.hasChildren(['id','number','firstCycleId','memberCount','mode','createdAt','auditId']) && newData.child('id').val() === $round && newData.parent().parent().child('cycles').child(newData.child('firstCycleId').val()).child('roundKey').val() === $round && newData.parent().parent().child('auditLog').child(newData.child('auditId').val()).child('userId').val() === auth.uid && !root.child('mukando/auditLog').child(newData.child('auditId').val()).exists())",
+          "mode": {
+            ".validate": "newData.val() === 'manual' || newData.val() === 'random'"
+          }
+        }
+      },
+      "memberCycles": {
+        ".read": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson' || root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer')",
+        "$memberId": {
+          ".read": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && root.child('mukando/users').child(auth.uid).child('role').val() === 'member' && root.child('mukando/users').child(auth.uid).child('memberId').val() === $memberId",
+          "$cycle": {
+            ".write": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson') && newData.exists()) || (auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer') && data.exists() && newData.exists()) || ((root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) && newData.exists())",
+            ".validate": "newData.hasChildren([\"id\", \"cycleId\", \"number\", \"round\", \"dueDate\", \"amount\", \"penaltyAmount\", \"graceDays\", \"status\", \"isRecipient\"]) && newData.parent().parent().parent().child('cycles').child($cycle).child('participantIds').val().contains('|' + $memberId + '|')",
+            "$other": {
+              ".validate": "false"
+            },
+            "id": {
+              ".validate": "newData.val() === $cycle"
+            },
+            "cycleId": {
+              ".validate": "newData.val() === $cycle"
+            },
+            "number": {
+              ".validate": "newData.val() === newData.parent().parent().parent().parent().child('cycles').child($cycle).child('number').val()"
+            },
+            "round": {
+              ".validate": "newData.val() === newData.parent().parent().parent().parent().child('cycles').child($cycle).child('round').val()"
+            },
+            "dueDate": {
+              ".validate": "newData.val() === newData.parent().parent().parent().parent().child('cycles').child($cycle).child('dueDate').val()"
+            },
+            "amount": {
+              ".validate": "newData.val() === newData.parent().parent().parent().parent().child('cycles').child($cycle).child('amount').val()"
+            },
+            "penaltyAmount": {
+              ".validate": "newData.val() === newData.parent().parent().parent().parent().child('cycles').child($cycle).child('penaltyAmount').val()"
+            },
+            "graceDays": {
+              ".validate": "newData.val() === newData.parent().parent().parent().parent().child('cycles').child($cycle).child('graceDays').val()"
+            },
+            "status": {
+              ".validate": "newData.val() === newData.parent().parent().parent().parent().child('cycles').child($cycle).child('status').val()"
+            },
+            "isRecipient": {
+              ".validate": "newData.isBoolean() && newData.val() === (newData.parent().parent().parent().parent().child('cycles').child($cycle).child('recipientMemberId').val() === $memberId)"
+            }
+          }
+        }
+      },
+      "roundRecipients": {
+        ".read": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson' || root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer')",
+        "$round": {
+          "$memberId": {
+            ".write": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson') && newData.exists()) || ((root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) && newData.exists())",
+            ".validate": "newData.isString() && newData.parent().parent().parent().child('cycles').child(newData.val()).child('recipientMemberId').val() === $memberId && newData.parent().parent().parent().child('cycles').child(newData.val()).child('roundKey').val() === $round && (!data.exists() || newData.val() === data.val() || newData.parent().parent().parent().child('cycles').child(data.val()).child('recipientMemberId').val() !== $memberId)"
+          }
+        }
+      },
+      "paymentReversals": {
+        ".read": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson' || root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer')",
+        "$originalId": {
+          ".write": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer' && !data.exists() && newData.exists()) || ((root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) && !data.exists() && newData.exists())",
+          ".validate": "newData.isString() && newData.parent().parent().child('payments').child(newData.val()).child('reversesPaymentId').val() === $originalId"
+        }
+      },
+      "cycleLocks": {
+        ".read": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson' || root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer')",
+        "$id": {
+          "hasPayments": {
+            ".write": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer' && newData.val() === true) || ((root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) && newData.val() === true)",
+            ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || (root.child('mukando/cycles').child($id).exists())"
+          },
+          "hasPayout": {
+            ".write": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer') && !data.exists() && newData.val() === true) || ((root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) && newData.val() === true)",
+            ".validate": "newData.val() === true && newData.parent().parent().parent().child('payouts').child($id).exists()"
+          }
+        }
+      },
+      "cycleApprovals": {
+        ".read": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson' || root.child('mukando/users').child(auth.uid).child('role').val() === 'treasurer')",
+        "$id": {
+          ".write": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson') && !data.exists() && newData.exists()) || ((root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) && !data.exists() && newData.exists())",
+          ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || (newData.hasChildren(['cycleId','approvedBy','time','reason','auditId']) && newData.child('cycleId').val() === $id && newData.child('approvedBy').val() === auth.uid && root.child('mukando/cycles').child($id).child('status').val() === 'open' && newData.child('reason').isString() && newData.child('reason').val().length > 0 && newData.child('reason').val().length <= 200 && newData.parent().parent().child('auditLog').child(newData.child('auditId').val()).child('userId').val() === auth.uid && !root.child('mukando/auditLog').child(newData.child('auditId').val()).exists())",
+          "cycleId": {
+            ".validate": "newData.val() === $id"
+          },
+          "approvedBy": {
+            ".validate": "(root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) || (newData.isString())"
+          },
+          "time": {
+            ".validate": "newData.isString()"
+          },
+          "reason": {
+            ".validate": "newData.isString()"
+          },
+          "auditId": {
+            ".validate": "newData.isString()"
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        }
+      },
+      "settings": {
+        ".read": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true",
+        "reminders": {
+          ".write": "(auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin' || root.child('mukando/users').child(auth.uid).child('role').val() === 'chairperson') && newData.exists()) || ((root.child('mukando/restoreMode').val() === true && auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')) && newData.exists())",
+          ".validate": "newData.hasChildren(['id','daysBefore']) && newData.child('id').val() === 'reminders'",
+          "id": {
+            ".validate": "newData.val() === 'reminders'"
+          },
+          "daysBefore": {
+            ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 30"
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        }
+      },
+      "restoreMode": {
+        ".read": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin')",
+        ".write": "auth != null && root.child('mukando/users').child(auth.uid).child('active').val() === true && (root.child('mukando/users').child(auth.uid).child('role').val() === 'admin') && (newData.val() === false || (newData.val() === true && !root.child('mukando/cycles').exists() && !root.child('mukando/payments').exists() && !root.child('mukando/payouts').exists() && !root.child('mukando/members').exists()))",
+        ".validate": "newData.isBoolean()"
+      }
+    }
+  }
+}

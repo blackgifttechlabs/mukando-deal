@@ -1,0 +1,1 @@
+{ "name": "mukando-tests", "private": true, "type": "module", "devDependencies": { "firebase": "12.4.0" } }
