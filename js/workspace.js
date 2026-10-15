@@ -1,4 +1,5 @@
 import "./mobile.js";
+import "./pwa.js";
 import { getLayoutUser } from './db.js';
 // Paint static sidebar links immediately using the last verified role.
 // Page guards and Firebase rules always re-check permissions independently.

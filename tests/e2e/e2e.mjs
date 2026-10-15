@@ -22,7 +22,12 @@ async function goto(page, file) {
 const text = (page, selector) => page.locator(selector).first().innerText();
 const shot = (page, name) => page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true });
 const expectError = async (page, pattern) => { await page.waitForSelector('[data-error]:not([hidden])', { timeout: 5000 }); assert.match(await text(page, '[data-error]'), pattern); };
-const expectSuccess = async (page, pattern) => { await page.waitForSelector('[data-success]:not([hidden])', { timeout: 5000 }); assert.match(await text(page, '[data-success]'), pattern); };
+// Wait for the matching message, not just any message: an earlier success notice may still be on screen.
+const expectSuccess = async (page, pattern) => {
+  await page.waitForSelector('[data-success]:not([hidden])', { timeout: 5000 });
+  await page.waitForFunction(({ source, flags }) => new RegExp(source, flags).test(document.querySelector('[data-success]')?.textContent ?? ''), { source: pattern.source, flags: pattern.flags }, { timeout: 5000 }).catch(() => {});
+  assert.match(await text(page, '[data-success]'), pattern, 'Page error: ' + await text(page, '[data-error]').catch(() => ''));
+};
 
 // ---- Role-based navigation
 for (const [uid, links, hidden] of [['a', ['Users', 'Backup', 'Reports', 'Payouts'], ['Record payment']], ['t', ['Record payment', 'Payouts', 'Reports', 'Reminders', 'My account'], ['Users', 'Backup', 'Members']], ['u1', ['Dashboard', 'Payments', 'Reminders', 'My account'], ['Users', 'Backup', 'Reports', 'Payouts', 'Members']]]) {
@@ -91,7 +96,7 @@ assert.ok(await rp.locator('[data-settings-panel]').isHidden(), 'treasurer canno
 await shot(rp, 'reminders-treasurer');
 const chairR = await open('c', 'reminders.html');
 await chairR.fill('#days-before', '5'); await chairR.click('[data-save-settings]'); await expectSuccess(chairR, /saved/);
-await chairR.fill('#meeting-date', '2026-10-14'); await chairR.fill('#meeting-message', 'Monthly meeting at the church hall'); await chairR.click('[data-save-meeting]'); await expectSuccess(chairR, /Meeting reminder added/);
+await chairR.fill('#meeting-date', '2026-10-12'); await chairR.fill('#meeting-message', 'Monthly meeting at the church hall'); await chairR.click('[data-save-meeting]'); await expectSuccess(chairR, /Meeting reminder added/);
 assert.match(await text(chairR, '[data-reminders]'), /Monthly meeting/);
 await shot(chairR, 'reminders-chair');
 await chairR.selectOption('#reminder-filter', 'all');
@@ -129,7 +134,7 @@ await admin.click('[data-cancel-form]');
 await admin.locator('tr', { hasText: 'New Treasurer' }).getByText('Reset password').click(); await expectSuccess(admin, /reset email sent to new.member@club.test/);
 await admin.locator('tr', { hasText: 'New Treasurer' }).getByText('Deactivate').click(); await admin.waitForSelector('tr:has-text("New Treasurer") .is-inactive'); assert.equal((await owner('mukando/users/new-1')).active, false);
 assert.ok(await admin.locator('tr', { hasText: 'Admin Anna' }).getByText('Deactivate').isDisabled(), 'cannot deactivate yourself');
-await admin.locator('tr', { hasText: 'Farai' }).getByText('Edit').click(); await admin.selectOption('#edit-role', 'chairperson'); await admin.click('[data-confirm-edit]'); await admin.waitForSelector('[data-success]:not([hidden])');
+await admin.locator('tr', { hasText: 'Farai' }).getByText('Edit').click(); await admin.selectOption('#edit-role', 'chairperson'); await admin.click('[data-confirm-edit]'); await expectSuccess(admin, /Account updated/);
 profile = await owner('mukando/users/new-2'); assert.equal(profile.role, 'chairperson'); assert.equal(profile.memberId, undefined);
 await shot(admin, 'users');
 // ---- Backup, wipe, restore

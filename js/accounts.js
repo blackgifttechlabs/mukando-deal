@@ -3,6 +3,7 @@ import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/12.
 import { getAuth, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider }
   from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import { auth, firebaseConfig } from './firebase.js';
+import { rememberCredential } from './localdb.js';
 export function checkPassword(password) {
   if (password.length < 8) throw new Error('Use a password with at least 8 characters.');
   if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) throw new Error('Use letters and at least one number in the password.');
@@ -25,5 +26,7 @@ export async function changeOwnPassword(current, next) {
   if (!auth.currentUser?.email) throw new Error('Sign in again before changing your password.');
   await reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(auth.currentUser.email, current));
   await updatePassword(auth.currentUser, next);
+  // Offline login must accept the new password from now on.
+  try { await rememberCredential(auth.currentUser.email, auth.currentUser.uid, next); } catch { /* Offline login keeps the old password until the next online login. */ }
 }
 export const ownEmail = () => auth.currentUser?.email ?? '';

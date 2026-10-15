@@ -209,6 +209,21 @@ cd tests && npm install && node integration.mjs              # real js/db.js aga
 
 To see a busy club (20 members, a full year of monthly payments since January, payouts, late and unpaid members, a corrected payment, a meeting reminder), paste `SEED-DEMO-DATA.sh` into Google Cloud Shell. If the club already has records, they are **replaced**: the old records are first saved to `mukando-before-demo-DATE.json` in your Cloud Shell folder, login accounts are kept (member accounts are re-linked to the first demo members), and your club name, amount, penalty and grace days are kept with the start date moved to 5 January. Set `REPLACE_EXISTING=no` on the script's first lines to make it refuse instead. It needs an active admin profile; treasurer actions use your treasurer profile if there is one, otherwise the admin. `REMOVE-DEMO-DATA.sh` clears it again: change `CONFIRM_DELETE=no` to `yes` first. That deletes members, rotation, payments, payouts, reminders and the audit trail (including anything you recorded after seeding) but keeps logins and rules.
 
+## Offline use and sync
+
+The app works without internet once it has been opened and logged in online on that device.
+
+- **Local database:** `js/localdb.js` keeps a SQLite copy of the club data on the device (sql.js, files in `vendor/`, saved in IndexedDB). There is one database per login, so another account on the same device never sees it.
+- **Online:** `js/sync.js` sends every write to Firebase first, so the database rules still decide, and then copies it into SQLite. Reads come from Firebase and refresh SQLite.
+- **Offline:** reads come from SQLite. Writes go into SQLite and a queue (the outbox) that survives closing the browser.
+- **Back online:** the queue is sent in order, then the server's data replaces the local copy (a role-aware download: staff get everything they may read, members only their own records). The page also syncs every minute and when the tab becomes visible. If another person changed something, the badge offers "Refresh page".
+- **Refused changes:** if the rules reject a queued change (for example a payment on a cycle that was paid out meanwhile), it is removed from the device, the server's version is restored, and the badge lists what was refused.
+- **Offline login:** after each online login a salted PBKDF2 hash of the password (never the password) is kept on the device. Offline, the email and password are checked against it. Because there is no Firebase session, the badge asks for the password once when the connection returns, then syncs. A changed password is updated on the device when changed through My account.
+- **Service worker (`sw.js`):** keeps the pages, scripts, Firebase SDK and Font Awesome so pages open with no network. Bump `VERSION` in `sw.js` when adding files to its list.
+- **Online only:** restoring a backup, creating accounts and changing passwords need a connection.
+- **Limits:** offline, the database rules cannot check anything; the checks run when the change is sent. Offline logins also keep working for a person an administrator deactivated until that device syncs. The cloud database is the Realtime Database, not Firestore.
+- **Tests:** `tests/offline.mjs` (SQLite layer against the emulator), `tests/e2e/offline.mjs` (offline login, save and sync in Chrome) and `tests/e2e/sw.mjs` (service worker; needs internet for the first load).
+
 ## Known limits
 
 - **Rules versus a backend.** Firebase rules cannot add up many records. The browser checks that every member is paid before a cycle closes and that a payout equals the amount collected; a determined treasurer using the Firebase SDK directly could skip those two checks (the rules do still require a confirmed payout, correct cycle order, append-only records and audit entries). A real deployment that handles significant money should move these two checks to a trusted server (Cloud Functions).
