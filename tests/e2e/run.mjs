@@ -22,7 +22,9 @@ export async function launch() {
   return browser;
 }
 export async function sessionFor(browser, uid, viewport = { width: 1280, height: 900 }) {
-  const context = await browser.newContext({ viewport });
+  const context = await browser.newContext({ viewport, serviceWorkers: 'block' });
+  // The scenario's penalties and due dates were written for this date, so the browser pretends it is that day.
+  await context.clock.setFixedTime(new Date(process.env.TEST_NOW || '2026-10-12T08:00:00+02:00'));
   await context.addInitScript(({ uid, accounts }) => {
     window.__accounts = accounts;
     if (uid && !sessionStorage.getItem('shim-user')) sessionStorage.setItem('shim-user', JSON.stringify({ uid, email: uid + '@club.test' }));

@@ -1,3 +1,4 @@
+import './pwa.js';
 import { currentUser, login } from './auth.js';
 import { showError } from './ui.js';
 const form = document.querySelector('form');

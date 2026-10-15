@@ -1,13 +1,7 @@
 // All club data access lives here. The namespace avoids touching other project data.
-// Load cloud services only when club records are requested. Appearance works offline.
-let backendPromise;
-function backend() {
-  backendPromise ??= Promise.all([
-    import('https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js'),
-    import('./firebase.js')
-  ]).then(([sdk, config]) => ({ ...sdk, database: config.database }));
-  return backendPromise;
-}
+// Reads and writes go through sync.js: Firebase while online, the on-device SQLite copy while offline.
+import { backend as localFirst, requireOnline, isOnline } from './sync.js';
+const backend = () => localFirst();
 // Appearance is a device preference, separate from cloud club records.
 export function getThemePreference() {
   try {
@@ -377,6 +371,7 @@ export async function exportBackup(user) {
 // Restore mode must never stay switched on. Called when the Backup page opens, in case a restore was interrupted.
 export async function endRestoreMode(user) {
   requireRole(user, ['admin']);
+  if (!isOnline()) return; // Restore mode can only have been switched on while online.
   const { ref, get, set, database } = await backend();
   const restoreRef = ref(database, 'mukando/restoreMode');
   if ((await get(restoreRef)).val() === true) await set(restoreRef, false);
@@ -400,6 +395,7 @@ function flatten(value, depth, prefix, updates) {
 export async function importBackup(file, user) {
   requireRole(user, ['admin']);
   summariseBackup(file);
+  requireOnline('Restoring a backup');
   const { ref, set, update, database } = await backend();
   const existing = await Promise.all(['members', 'cycles', 'payments', 'payouts'].map(name => db.list(name)));
   if (existing.some(rows => rows.length)) throw new Error('Restore needs an empty club. Clear the club data in the Firebase console first, then import.');

@@ -10,5 +10,10 @@ export async function resolve(specifier, context, next) {
     const query = new URL(context.parentURL).search;
     return { url: new URL('./firebase-stub.mjs', import.meta.url).href + query, shortCircuit: true };
   }
+  if (specifier === './sync.js' && context.parentURL?.includes('/js/')) {
+    // sync.js opens its own database connection, so it must see the same "?u=" user as db.js.
+    const resolved = await next(specifier, context);
+    return { ...resolved, url: resolved.url.split('?')[0] + new URL(context.parentURL).search };
+  }
   return next(specifier, context);
 }
